@@ -79,7 +79,7 @@ def base_nodes(a):
         "4": {"class_type": "BeatCutPlanShots", "inputs": {
             "beat_map": ["2", 0], "subject": a.subject, "brief": a.brief.replace("|", "\n"), "style": a.style,
             "fps": a.fps, "width": a.width, "height": a.height, "max_shots": a.max_shots, "pace": a.pace,
-            "max_gen_seconds": a.max_gen_seconds, "seed": a.seed}},
+            "max_gen_seconds": a.max_gen_seconds, "seed": a.seed, "drop_look": a.drop_look}},
         "5": {"class_type": "BeatCutPlanJSON", "inputs": {"plan": ["4", 0]}},
     }
 
@@ -178,6 +178,7 @@ def main():
     ap.add_argument("--subject", default="the person in the reference image")
     ap.add_argument("--brief", default="neon-lit rooftop at night|rain-soaked city street|stadium of light")
     ap.add_argument("--style", default="music video, anamorphic 35mm, teal and orange grade, high contrast")
+    ap.add_argument("--drop-look", default="", help="How the subject transforms on the drop.")
     ap.add_argument("--start", type=float, default=0.0)
     ap.add_argument("--duration", type=float, default=15.0)
     ap.add_argument("--bpm", type=float, default=0.0)

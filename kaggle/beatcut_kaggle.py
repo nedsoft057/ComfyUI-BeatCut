@@ -6,6 +6,7 @@ IMAGE_URL = ""          # optional: direct link to a photo of your subject. Empt
 SUBJECT   = "a confident young man in a bright orange bomber jacket and black jeans"
 BRIEF     = "neon-lit rooftop at night | rain-soaked city street with reflections | stadium flooded with light beams"
 STYLE     = "music video, anamorphic 35mm, teal and orange grade, high contrast"
+DROP_LOOK = "his jacket and body erupting into flowing liquid fire and glowing chrome armor, eyes blazing"  # the drop transformation
 START, DURATION = 0.0, 0.0   # seconds into the song, edit length (0 = whole song)
 MAX_SHOTS = 8
 RUN_ID    = ""          # set to a previous run id to re-render video without redoing keyframes
@@ -134,7 +135,7 @@ if errs: print("\n".join(errs))
 
 # ---------------------------------------------------------------- render
 args = [sys.executable, f"{nodes}/scripts/run_beatcut.py", "--comfy-dir", COMFY, "--audio", song,
-        "--subject", SUBJECT, "--brief", BRIEF, "--style", STYLE, "--start", str(START), "--duration", str(DURATION),
+        "--subject", SUBJECT, "--drop-look", globals().get("DROP_LOOK", "his jacket and body erupting into flowing liquid fire and glowing chrome armor, eyes blazing"), "--brief", BRIEF, "--style", STYLE, "--start", str(START), "--duration", str(DURATION),
         "--max-shots", str(MAX_SHOTS), "--ltx", "ltxv-2b.safetensors", "--save-raw-clips",
         "--klein", "flux-2-klein.safetensors"]
 klein_src = open(f"{COMFY}/models/diffusion_models/flux-2-klein.safetensors.source").read()

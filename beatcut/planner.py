@@ -63,7 +63,7 @@ def _pick(rng, options, last):
 
 def plan(beat_map: dict, subject: str, brief: str, style: str, fps: float = 24.0,
          width: int = 768, height: int = 512, max_shots: int = 12, min_beats: int = 1,
-         max_gen_seconds: float = 3.0, seed: int = 0, pace: float = 1.0) -> dict:
+         max_gen_seconds: float = 3.0, seed: int = 0, pace: float = 1.0, drop_look: str = "") -> dict:
     """pace > 1 cuts faster, < 1 holds longer."""
     rng = random.Random(seed)
     beats = beat_map["beats"]
@@ -139,16 +139,25 @@ def plan(beat_map: dict, subject: str, brief: str, style: str, fps: float = 24.0
         speed = {"slowmo": 0.6, "linear": 1.0, "ramp": 1.6}[remap]
         gen = ltx_frames(int(math.ceil(n_out * speed)) + 1, hi=ltx_frames(int(max_gen_seconds * fps)))
         energy = float(sum(beat_map["beat_energy"][bi: bi + 4]) / max(1, len(beat_map["beat_energy"][bi: bi + 4])))
-        kf = (f"{framing} of {subject}, {scene}. {LIGHT[sec]}. {style}. "
-              f"Keep the subject's identity, face, outfit and colors exactly as in the reference image.")
-        mo = (f"{move}. {subject} {action}, {scene}. {LIGHT[sec]}. {style}. "
-              f"cinematic, sharp focus, high detail, smooth natural motion.")
+        first_drop = min(drop_starts) if drop_starts else None
+        transformed = bool(drop_look) and first_drop is not None and t0 >= first_drop - 1e-3
+        if transformed:
+            # the drop is the transformation: same identity, new form
+            kf = (f"{framing} of {subject}, {drop_look}, {scene}. {LIGHT[sec]}. {style}. "
+                  f"Keep the subject's face and identity from the reference image, but transform their look as described.")
+            mo = (f"{move}. {subject}, {drop_look}, {action}, {scene}. {LIGHT[sec]}. {style}. "
+                  f"cinematic, sharp focus, high detail, energetic motion.")
+        else:
+            kf = (f"{framing} of {subject}, {scene}. {LIGHT[sec]}. {style}. "
+                  f"Keep the subject's identity, face, outfit and colors exactly as in the reference image.")
+            mo = (f"{move}. {subject} {action}, {scene}. {LIGHT[sec]}. {style}. "
+                  f"cinematic, sharp focus, high detail, smooth natural motion.")
         shots.append({
             "index": j, "section": sec, "t0": round(t0, 4), "t1": round(t1, 4),
             "frame_start": f0, "frame_count": n_out, "gen_frames": gen, "remap": remap,
             "energy": round(energy, 3), "framing": framing, "move": move, "action": action, "scene": scene,
             "keyframe_prompt": kf, "motion_prompt": mo, "seed": seed * 1000 + j * 7919 + 17,
-            "is_drop": is_drop,
+            "is_drop": is_drop, "transformed": transformed,
         })
     return {"fps": fps, "width": width, "height": height, "duration": dur, "total_frames": total_frames,
             "subject": subject, "brief": brief, "style": style, "shots": shots}
@@ -160,5 +169,5 @@ def describe(p: dict) -> str:
     for s in p["shots"]:
         lines.append(f"#{s['index']:02d} {s['t0']:6.2f}-{s['t1']:6.2f}s {s['section']:5s} "
                      f"out {s['frame_count']:3d}f gen {s['gen_frames']:3d}f {s['remap']:6s} | "
-                     f"{s['framing']} / {s['move']}" + ("  << DROP" if s["is_drop"] else ""))
+                     f"{s['framing']} / {s['move']}" + ("  << DROP" if s["is_drop"] else "") + ("  [transformed]" if s.get("transformed") else ""))
     return "\n".join(lines)

@@ -75,6 +75,10 @@ class BeatCutPlanShots:
             "max_gen_seconds": ("FLOAT", {"default": 3.0, "min": 0.5, "max": 10.0, "step": 0.1,
                                           "tooltip": "Cap on generated clip length per shot (VRAM/time budget)."}),
             "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFF}),
+        }, "optional": {
+            "drop_look": ("STRING", {"default": "", "multiline": True,
+                                     "tooltip": "Drop transformation: how the subject looks from the drop onward "
+                                                "(e.g. 'in glowing chrome armor'). Empty = no transformation."}),
         }}
 
     RETURN_TYPES = (PLAN, "STRING", "STRING", "INT", "INT", "STRING", "INT", "INT", "FLOAT")
@@ -84,9 +88,10 @@ class BeatCutPlanShots:
     FUNCTION = "run"
     CATEGORY = CAT
 
-    def run(self, beat_map, subject, brief, style, fps, width, height, max_shots, pace, max_gen_seconds, seed):
+    def run(self, beat_map, subject, brief, style, fps, width, height, max_shots, pace, max_gen_seconds, seed,
+            drop_look=""):
         p = _plan(beat_map, subject, brief, style, fps=fps, width=width, height=height, max_shots=max_shots,
-                  pace=pace, max_gen_seconds=max_gen_seconds, seed=seed)
+                  pace=pace, max_gen_seconds=max_gen_seconds, seed=seed, drop_look=drop_look)
         sh = p["shots"]
         return (p, [s["keyframe_prompt"] for s in sh], [s["motion_prompt"] for s in sh],
                 [s["gen_frames"] for s in sh], [s["seed"] for s in sh], _describe(p), width, height, float(fps))
