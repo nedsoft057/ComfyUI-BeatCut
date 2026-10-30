@@ -7,7 +7,7 @@ SUBJECT   = "a confident young man in a bright orange bomber jacket and black je
 BRIEF     = "neon-lit rooftop at night | rain-soaked city street with reflections | stadium flooded with light beams"
 STYLE     = "music video, anamorphic 35mm, teal and orange grade, high contrast"
 START, DURATION = 0.0, 0.0   # seconds into the song, edit length (0 = whole song)
-MAX_SHOTS = 12
+MAX_SHOTS = 8
 RUN_ID    = ""          # set to a previous run id to re-render video without redoing keyframes
 # -------------------------------------------------------------------------
 import os, subprocess, sys, time, urllib.request, shutil, glob
@@ -64,8 +64,10 @@ except Exception:
     pass
 
 MODELS = [  # (folder, final name, [(repo, path-in-repo), ...fallbacks])
-    ("diffusion_models", "flux-2-klein-base-4b-fp8.safetensors",
-     [("black-forest-labs/FLUX.2-klein-base-4b-fp8", "flux-2-klein-base-4b-fp8.safetensors")]),
+    ("diffusion_models", "flux-2-klein.safetensors",
+     [("black-forest-labs/FLUX.2-klein-4b-fp8", "flux-2-klein-4b-fp8.safetensors"),
+      ("black-forest-labs/FLUX.2-klein-4B", "flux-2-klein-4b.safetensors"),
+      ("black-forest-labs/FLUX.2-klein-base-4b-fp8", "flux-2-klein-base-4b-fp8.safetensors")]),
     ("text_encoders", "qwen_3_4b.safetensors",
      [("Comfy-Org/z_image_turbo", "split_files/text_encoders/qwen_3_4b.safetensors")]),
     ("vae", "flux2-vae.safetensors",
@@ -87,6 +89,7 @@ for folder, name, cands in MODELS:
             print(f"downloading {repo}/{path}", flush=True)
             p = hf_hub_download(repo, path, token=token, cache_dir=f"{ROOT}/hf")
             os.symlink(p, dst)
+            open(dst + ".source", "w").write(path)
             break
         except Exception as e:
             print(f"  failed: {type(e).__name__}: {str(e)[:200]}")
@@ -118,7 +121,7 @@ def up():
         return False
 if not up():
     log = open(f"{ROOT}/comfy.log", "w")
-    subprocess.Popen([sys.executable, "main.py", "--listen", "127.0.0.1", "--port", "8188", "--disable-auto-launch"],
+    subprocess.Popen([sys.executable, "main.py", "--listen", "127.0.0.1", "--port", "8188", "--disable-auto-launch", "--disable-pinned-memory", "--cache-none"],
                      cwd=COMFY, stdout=log, stderr=subprocess.STDOUT)
     for _ in range(180):
         if up(): break
@@ -132,7 +135,14 @@ if errs: print("\n".join(errs))
 # ---------------------------------------------------------------- render
 args = [sys.executable, f"{nodes}/scripts/run_beatcut.py", "--comfy-dir", COMFY, "--audio", song,
         "--subject", SUBJECT, "--brief", BRIEF, "--style", STYLE, "--start", str(START), "--duration", str(DURATION),
-        "--max-shots", str(MAX_SHOTS), "--ltx", "ltxv-2b.safetensors", "--save-raw-clips"]
+        "--max-shots", str(MAX_SHOTS), "--ltx", "ltxv-2b.safetensors", "--save-raw-clips",
+        "--klein", "flux-2-klein.safetensors"]
+klein_src = open(f"{COMFY}/models/diffusion_models/flux-2-klein.safetensors.source").read()
+if "base" in klein_src:
+    args += ["--klein-steps", "10", "--klein-cfg", "3.5"]
+else:  # distilled: 4 steps, guidance baked in
+    args += ["--klein-steps", "4", "--klein-cfg", "1.0"]
+print("keyframe model:", klein_src, flush=True)
 if image: args += ["--image", image]
 if RUN_ID: args += ["--run", RUN_ID, "--skip-keyframes"]
 rc = stream(args)

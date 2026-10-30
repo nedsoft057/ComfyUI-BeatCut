@@ -43,7 +43,7 @@ def get(server, path):
         return json.loads(r.read())
 
 
-def wait(server, prompt_id, label):
+def wait(server, prompt_id, label, watch_dir=None, prefix=""):
     t0 = time.time()
     last = ""
     while True:
@@ -60,10 +60,13 @@ def wait(server, prompt_id, label):
             print(f"[{label}] done in {time.time() - t0:.0f}s", flush=True)
             return h[prompt_id]
         q = get(server, "/queue")
-        msg = f"[{label}] running... {time.time() - t0:.0f}s (queue {len(q.get('queue_running', []))}+{len(q.get('queue_pending', []))})"
-        if msg[:30] != last[:30] or int(time.time() - t0) % 30 == 0:
+        done = ""
+        if watch_dir and os.path.isdir(watch_dir):
+            done = f" | {len([f for f in os.listdir(watch_dir) if f.startswith(prefix)])} {prefix or 'files'} saved"
+        msg = f"[{label}] running... {time.time() - t0:.0f}s{done}"
+        if done != last or int(time.time() - t0) % 60 < 5:
             print(msg, flush=True)
-            last = msg
+            last = done
         time.sleep(5)
 
 
@@ -94,8 +97,8 @@ def keyframe_prompt(a, run):
                    f"sharp detailed face, {a.style}"}},
             "51": {"class_type": "CFGGuider", "inputs": {"model": ["10", 0], "positive": ["50", 0],
                                                            "negative": ["14", 0], "cfg": a.klein_cfg}},
-            "52": {"class_type": "Flux2Scheduler", "inputs": {"steps": a.klein_steps, "width": 768, "height": 1024}},
-            "53": {"class_type": "EmptyFlux2LatentImage", "inputs": {"width": 768, "height": 1024, "batch_size": 1}},
+            "52": {"class_type": "Flux2Scheduler", "inputs": {"steps": a.klein_steps, "width": 640, "height": 832}},
+            "53": {"class_type": "EmptyFlux2LatentImage", "inputs": {"width": 640, "height": 832, "batch_size": 1}},
             "54": {"class_type": "RandomNoise", "inputs": {"noise_seed": a.seed + 4242}},
             "55": {"class_type": "SamplerCustomAdvanced", "inputs": {
                 "noise": ["54", 0], "guider": ["51", 0], "sampler": ["20", 0], "sigmas": ["52", 0], "latent_image": ["53", 0]}},
@@ -217,7 +220,8 @@ def main():
     print(f"BeatCut run {run}")
     if not a.skip_keyframes:
         r = post(a.server, "/prompt", {"prompt": keyframe_prompt(a, run), "client_id": run})
-        h = wait(a.server, r["prompt_id"], "pass 1: beat analysis + shot plan + keyframes")
+        h = wait(a.server, r["prompt_id"], "pass 1: beat analysis + shot plan + keyframes",
+                 os.path.join(a.comfy_dir, "output", "BeatCut", run), "kf_")
         for nid, out in h.get("outputs", {}).items():
             if "text" in out:
                 print("\n".join(map(str, out["text"])))
@@ -227,7 +231,7 @@ def main():
     if a.only_keyframes:
         return
     r = post(a.server, "/prompt", {"prompt": video_prompt(a, run, n_kf), "client_id": run})
-    wait(a.server, r["prompt_id"], "pass 2: LTX clips + beat-synced assembly")
+    wait(a.server, r["prompt_id"], "pass 2: LTX clips + beat-synced assembly", out_dir, "edit_")
     vids = sorted(f for f in os.listdir(out_dir) if f.startswith("edit_") and f.endswith(".mp4"))
     print("FINAL:", os.path.join(out_dir, vids[-1]) if vids else "(no mp4 found)")
 
