@@ -17,10 +17,17 @@ ROOT = "/tmp/bc"
 COMFY = f"{ROOT}/ComfyUI"
 os.makedirs(ROOT, exist_ok=True)
 
+def stream(cmd, shell=False):
+    """Run a command and stream its output into the notebook cell."""
+    p = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    for line in p.stdout:
+        print(line, end="", flush=True)
+    return p.wait()
+
 def sh(cmd, check=True):
     print("$", cmd, flush=True)
-    r = subprocess.run(cmd, shell=True)
-    if check and r.returncode:
+    rc = stream(cmd, shell=True)
+    if check and rc:
         raise SystemExit(f"command failed: {cmd}")
 
 t0 = time.time()
@@ -119,11 +126,11 @@ args = [sys.executable, f"{nodes}/scripts/run_beatcut.py", "--comfy-dir", COMFY,
         "--max-shots", str(MAX_SHOTS), "--ltx", "ltxv-2b.safetensors", "--save-raw-clips"]
 if image: args += ["--image", image]
 if RUN_ID: args += ["--run", RUN_ID, "--skip-keyframes"]
-r = subprocess.run(args)
+rc = stream(args)
 # copy results to /kaggle/working so they show up under Output for download
 for d in glob.glob(f"{COMFY}/output/BeatCut/*"):
     shutil.copytree(d, f"{W}/BeatCut/{os.path.basename(d)}", dirs_exist_ok=True)
-if r.returncode:
+if rc:
     print("---- last ComfyUI log lines ----"); print(open(f"{ROOT}/comfy.log").read()[-5000:])
 print(f"total {time.time() - t0:.0f}s — results in {W}/BeatCut/")
 for f in sorted(glob.glob(f"{W}/BeatCut/*/*.mp4")): print(f)
