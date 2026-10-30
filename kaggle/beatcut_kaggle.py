@@ -33,11 +33,20 @@ def sh(cmd, check=True):
 t0 = time.time()
 if not os.path.isdir(COMFY):
     sh(f"git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git {COMFY}")
-    # keep Kaggle's CUDA torch; install everything else
-    req = [l for l in open(f"{COMFY}/requirements.txt").read().splitlines()
-           if l.strip() and not l.startswith(("torch", "torchvision", "torchaudio", "#"))]
-    open(f"{ROOT}/req.txt", "w").write("\n".join(req))
-    sh(f"{sys.executable} -m pip install -q -r {ROOT}/req.txt")
+# keep Kaggle's CUDA torch/torchvision/torchaudio; install everything else
+# (careful: torchsde etc. also start with "torch")
+import re
+KEEP = {"torch", "torchvision", "torchaudio"}
+req = []
+for l in open(f"{COMFY}/requirements.txt").read().splitlines():
+    l = l.strip()
+    if not l or l.startswith("#"):
+        continue
+    name = re.split(r"[<>=!~\[; ]", l, 1)[0].lower()
+    if name not in KEEP:
+        req.append(l)
+open(f"{ROOT}/req.txt", "w").write("\n".join(req))
+sh(f"{sys.executable} -m pip install -q -r {ROOT}/req.txt")
 nodes = f"{COMFY}/custom_nodes/ComfyUI-BeatCut"
 if os.path.isdir(nodes):
     sh(f"git -C {nodes} pull -q")
