@@ -1,0 +1,296 @@
+{
+ "1": {
+  "class_type": "LoadAudio",
+  "inputs": {
+   "audio": "demo_song.mp3"
+  }
+ },
+ "2": {
+  "class_type": "BeatCutAnalyze",
+  "inputs": {
+   "audio": [
+    "1",
+    0
+   ],
+   "start_seconds": 0.0,
+   "duration_seconds": 15.0,
+   "bpm_hint": 0.0,
+   "drop_sensitivity": 0.5
+  }
+ },
+ "4": {
+  "class_type": "BeatCutPlanShots",
+  "inputs": {
+   "beat_map": [
+    "2",
+    0
+   ],
+   "subject": "the person in the reference image",
+   "brief": "neon-lit rooftop at night\nrain-soaked city street\nstadium of light",
+   "style": "music video, anamorphic 35mm, teal and orange grade, high contrast",
+   "fps": 24.0,
+   "width": 768,
+   "height": 512,
+   "max_shots": 10,
+   "pace": 1.0,
+   "max_gen_seconds": 3.0,
+   "seed": 0
+  }
+ },
+ "5": {
+  "class_type": "BeatCutPlanJSON",
+  "inputs": {
+   "plan": [
+    "4",
+    0
+   ]
+  }
+ },
+ "3": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "subject.png"
+  }
+ },
+ "10": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "flux-2-klein-base-4b-fp8.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "11": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "flux2",
+   "device": "default"
+  }
+ },
+ "12": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  }
+ },
+ "13": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "11",
+    0
+   ],
+   "text": [
+    "4",
+    1
+   ]
+  }
+ },
+ "14": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "11",
+    0
+   ],
+   "text": ""
+  }
+ },
+ "15": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "3",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "megapixels": 1.0,
+   "resolution_steps": 1
+  }
+ },
+ "16": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "15",
+    0
+   ],
+   "vae": [
+    "12",
+    0
+   ]
+  }
+ },
+ "17": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "13",
+    0
+   ],
+   "latent": [
+    "16",
+    0
+   ]
+  }
+ },
+ "18": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "14",
+    0
+   ],
+   "latent": [
+    "16",
+    0
+   ]
+  }
+ },
+ "19": {
+  "class_type": "CFGGuider",
+  "inputs": {
+   "model": [
+    "10",
+    0
+   ],
+   "positive": [
+    "17",
+    0
+   ],
+   "negative": [
+    "18",
+    0
+   ],
+   "cfg": 5.0
+  }
+ },
+ "20": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "21": {
+  "class_type": "Flux2Scheduler",
+  "inputs": {
+   "steps": 20,
+   "width": [
+    "4",
+    6
+   ],
+   "height": [
+    "4",
+    7
+   ]
+  }
+ },
+ "22": {
+  "class_type": "EmptyFlux2LatentImage",
+  "inputs": {
+   "width": [
+    "4",
+    6
+   ],
+   "height": [
+    "4",
+    7
+   ],
+   "batch_size": 1
+  }
+ },
+ "23": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": [
+    "4",
+    4
+   ]
+  }
+ },
+ "24": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "23",
+    0
+   ],
+   "guider": [
+    "19",
+    0
+   ],
+   "sampler": [
+    "20",
+    0
+   ],
+   "sigmas": [
+    "21",
+    0
+   ],
+   "latent_image": [
+    "22",
+    0
+   ]
+  }
+ },
+ "25": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "24",
+    0
+   ],
+   "vae": [
+    "12",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "25",
+    0
+   ],
+   "filename_prefix": "BeatCut/demo/kf"
+  }
+ },
+ "27": {
+  "class_type": "BeatCutTimeline",
+  "inputs": {
+   "beat_map": [
+    "2",
+    0
+   ],
+   "width": 1600,
+   "plan": [
+    "4",
+    0
+   ],
+   "keyframes": [
+    "25",
+    0
+   ]
+  }
+ },
+ "28": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "27",
+    0
+   ],
+   "filename_prefix": "BeatCut/demo/timeline"
+  }
+ },
+ "29": {
+  "class_type": "PreviewAny",
+  "inputs": {
+   "source": [
+    "4",
+    5
+   ]
+  }
+ }
+}

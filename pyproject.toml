@@ -1,0 +1,13 @@
+[project]
+name = "comfyui-beatcut"
+description = "Song in, music video out: beat-synced shot planning, keyframes, motion and on-beat FX for ComfyUI."
+version = "0.1.0"
+license = { file = "LICENSE" }
+dependencies = ["numpy", "scipy", "pillow", "opencv-python-headless"]
+
+[project.urls]
+Repository = "https://github.com/nedsoft057/ComfyUI-BeatCut"
+
+[tool.comfy]
+PublisherId = "nedsoft057"
+DisplayName = "BeatCut"

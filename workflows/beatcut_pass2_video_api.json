@@ -1,0 +1,266 @@
+{
+ "1": {
+  "class_type": "LoadAudio",
+  "inputs": {
+   "audio": "demo_song.mp3"
+  }
+ },
+ "2": {
+  "class_type": "BeatCutAnalyze",
+  "inputs": {
+   "audio": [
+    "1",
+    0
+   ],
+   "start_seconds": 0.0,
+   "duration_seconds": 15.0,
+   "bpm_hint": 0.0,
+   "drop_sensitivity": 0.5
+  }
+ },
+ "4": {
+  "class_type": "BeatCutPlanShots",
+  "inputs": {
+   "beat_map": [
+    "2",
+    0
+   ],
+   "subject": "the person in the reference image",
+   "brief": "neon-lit rooftop at night\nrain-soaked city street\nstadium of light",
+   "style": "music video, anamorphic 35mm, teal and orange grade, high contrast",
+   "fps": 24.0,
+   "width": 768,
+   "height": 512,
+   "max_shots": 10,
+   "pace": 1.0,
+   "max_gen_seconds": 3.0,
+   "seed": 0
+  }
+ },
+ "5": {
+  "class_type": "BeatCutPlanJSON",
+  "inputs": {
+   "plan": [
+    "4",
+    0
+   ]
+  }
+ },
+ "25": {
+  "class_type": "BeatCutLoadKeyframes",
+  "inputs": {
+   "filename_prefix": "BeatCut/demo/kf",
+   "count": 10
+  }
+ },
+ "30": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "ltxv-2b-0.9.8-distilled.safetensors"
+  }
+ },
+ "31": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "t5xxl_fp8_e4m3fn_scaled.safetensors",
+   "type": "ltxv",
+   "device": "default"
+  }
+ },
+ "32": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "31",
+    0
+   ],
+   "text": [
+    "4",
+    2
+   ]
+  }
+ },
+ "33": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "31",
+    0
+   ],
+   "text": "worst quality, inconsistent motion, blurry, jittery, distorted, deformed face, extra limbs, watermark, text, subtitles"
+  }
+ },
+ "34": {
+  "class_type": "LTXVPreprocess",
+  "inputs": {
+   "image": [
+    "25",
+    0
+   ],
+   "img_compression": 35
+  }
+ },
+ "35": {
+  "class_type": "LTXVImgToVideo",
+  "inputs": {
+   "positive": [
+    "32",
+    0
+   ],
+   "negative": [
+    "33",
+    0
+   ],
+   "vae": [
+    "30",
+    2
+   ],
+   "image": [
+    "34",
+    0
+   ],
+   "width": [
+    "4",
+    6
+   ],
+   "height": [
+    "4",
+    7
+   ],
+   "length": [
+    "4",
+    3
+   ],
+   "batch_size": 1,
+   "strength": 1.0
+  }
+ },
+ "36": {
+  "class_type": "LTXVConditioning",
+  "inputs": {
+   "positive": [
+    "35",
+    0
+   ],
+   "negative": [
+    "35",
+    1
+   ],
+   "frame_rate": [
+    "4",
+    8
+   ]
+  }
+ },
+ "37": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "38": {
+  "class_type": "LTXVScheduler",
+  "inputs": {
+   "steps": 8,
+   "max_shift": 2.05,
+   "base_shift": 0.95,
+   "stretch": true,
+   "terminal": 0.1,
+   "latent": [
+    "35",
+    2
+   ]
+  }
+ },
+ "39": {
+  "class_type": "SamplerCustom",
+  "inputs": {
+   "model": [
+    "30",
+    0
+   ],
+   "add_noise": true,
+   "noise_seed": [
+    "4",
+    4
+   ],
+   "cfg": 1.0,
+   "positive": [
+    "36",
+    0
+   ],
+   "negative": [
+    "36",
+    1
+   ],
+   "sampler": [
+    "37",
+    0
+   ],
+   "sigmas": [
+    "38",
+    0
+   ],
+   "latent_image": [
+    "35",
+    2
+   ]
+  }
+ },
+ "40": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "39",
+    0
+   ],
+   "vae": [
+    "30",
+    2
+   ]
+  }
+ },
+ "41": {
+  "class_type": "BeatCutAssemble",
+  "inputs": {
+   "plan": [
+    "4",
+    0
+   ],
+   "beat_map": [
+    "2",
+    0
+   ],
+   "clips": [
+    "40",
+    0
+   ],
+   "audio": [
+    "1",
+    0
+   ],
+   "fx_intensity": 1.0,
+   "letterbox": 0.12,
+   "grain": 0.25
+  }
+ },
+ "42": {
+  "class_type": "BeatCutSaveMP4",
+  "inputs": {
+   "frames": [
+    "41",
+    0
+   ],
+   "audio": [
+    "41",
+    1
+   ],
+   "fps": [
+    "41",
+    2
+   ],
+   "filename_prefix": "BeatCut/demo/edit",
+   "crf": 18
+  }
+ }
+}
