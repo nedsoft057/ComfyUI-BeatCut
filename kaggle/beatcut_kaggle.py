@@ -1,7 +1,7 @@
 # BeatCut on a free Kaggle T4 — paste this whole file into ONE notebook cell and run.
 # Notebook settings: Accelerator = GPU T4 x2 (or P100), Internet = On.
 # ---------------------------------------------------------------- settings
-SONG_URL  = "https://raw.githubusercontent.com/nedsoft057/ComfyUI-BeatCut/main/examples/demo_song.mp3"
+SONG_URL  = ""          # direct link to an mp3/wav you can use. Empty = BeatCut synthesises its demo track.
 IMAGE_URL = ""          # optional: direct link to a photo of your subject. Empty = BeatCut generates a cast.
 SUBJECT   = "a confident young man in a bright orange bomber jacket and black jeans"
 BRIEF     = "neon-lit rooftop at night | rain-soaked city street with reflections | stadium flooded with light beams"
@@ -86,7 +86,11 @@ def fetch(url, name):
     else:
         shutil.copy(url, dst)
     return dst
-song = fetch(SONG_URL, "song" + os.path.splitext(SONG_URL.split("?")[0])[1])
+if SONG_URL:
+    song = fetch(SONG_URL, "song" + (os.path.splitext(SONG_URL.split("?")[0])[1] or ".mp3"))
+else:
+    song = f"{ROOT}/demo_song.wav"
+    sh(f"{sys.executable} {nodes}/examples/make_demo_song.py {song}")
 image = fetch(IMAGE_URL, "subject" + (os.path.splitext(IMAGE_URL.split("?")[0])[1] or ".png")) if IMAGE_URL else ""
 
 # ---------------------------------------------------------------- server
